@@ -126,3 +126,38 @@ test('Feature and Bug use consistent colours, distinct icons and text in cards a
   assert.notEqual(icons[0], icons[1], 'type remains distinguishable without colour');
   assert.equal(renderToStaticMarkup(React.createElement(TaskType, { type: 'unsupported' })), '');
 });
+
+test('cards expose full owner names and handoff controls outside the edit buttons', () => {
+  const tasks = createExampleTasks();
+  const html = renderToStaticMarkup(React.createElement(TaskBoard, { tasks }));
+  const cards = [...html.matchAll(/<article\b[^>]*>(.*?)<\/article>/g)].map(match => match[1]);
+  assert.equal(cards.length, tasks.length);
+  for (const [index, card] of cards.entries()) {
+    const task = tasks[index];
+    assert.ok(card.includes(task.assignee));
+    assert.ok(card.includes('rounded-full'));
+    assert.ok(card.includes('Hand off to…'));
+    assert.ok(card.includes(`for ${task.title}`));
+    const editorButton = card.match(/<button\b.*?<\/button>/)[0];
+    assert.ok(!editorButton.includes('<select'), 'handoff must not trigger the card editor');
+    const select = card.match(/<select\b.*?<\/select>/)[0];
+    assert.ok(!select.includes(`value="${task.assignee}"`));
+    for (const name of TEAM.filter(name => name !== task.assignee)) assert.ok(select.includes(name));
+  }
+  const blocked = renderToStaticMarkup(React.createElement(TaskBoard, { tasks, handoffDisabled: true }));
+  assert.equal((blocked.match(/<select\b[^>]*disabled=""/g) || []).length, tasks.length);
+});
+
+test('one-member configuration keeps examples valid and explains disabled handoff', () => {
+  const originalTeam = [...TEAM];
+  try {
+    TEAM.splice(1);
+    const tasks = createExampleTasks();
+    assert.ok(tasks.every(task => task.assignee === TEAM[0]));
+    const html = renderToStaticMarkup(React.createElement(TaskBoard, { tasks }));
+    assert.equal((html.match(/<select\b[^>]*disabled=""/g) || []).length, tasks.length);
+    assert.equal((html.match(/Add another configured member to enable handoff\./g) || []).length, tasks.length);
+  } finally {
+    TEAM.splice(0, TEAM.length, ...originalTeam);
+  }
+});

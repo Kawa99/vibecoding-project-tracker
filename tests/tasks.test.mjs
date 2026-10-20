@@ -2,10 +2,18 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   createExampleTasks, isDateOnly, localDate, newTask, normalizeTasks,
-  prepareTask, readTasks, taskErrors, TEAM, writeTasks,
+  ownerInitials, prepareTask, readTasks, taskErrors, TEAM, writeTasks,
 } from '../src/tasks.js';
 
 const key = 'vibetracker.tasks';
+
+test('owner initials omit example markers and support single and multiple names', () => {
+  assert.equal(ownerInitials('Alex (example)'), 'A');
+  assert.equal(ownerInitials(' Sam (example)'), 'S');
+  assert.equal(ownerInitials('Élodie Patel'), 'ÉP');
+  assert.equal(ownerInitials('  Ada   Lovelace  '), 'AL');
+  assert.equal(ownerInitials('One Two Three'), 'OT');
+});
 function memoryStorage(initial) {
   const data = new Map(initial === undefined ? [] : [[key, initial]]);
   return {
@@ -137,4 +145,21 @@ test('storage access and quota failures propagate without replacing prior data',
   assert.throws(() => writeTasks(untouched, key, [{ ...createExampleTasks()[0], title: '' }]));
   assert.equal(untouched.getItem(key), '[]');
   assert.deepEqual(normalizeTasks([]), []);
+});
+
+test('handoff round trips preserve every field except the owner and reject invalid targets', () => {
+  const original = { ...createExampleTasks()[0], context: 'Keep this context', contextUpdatedAt: '2026-01-01T12:00:00Z', extra: 'keep this too' };
+  const storage = memoryStorage();
+  for (const assignee of TEAM.filter(name => name !== original.assignee)) {
+    writeTasks(storage, key, [{ ...original, assignee }]);
+    const [restored] = readTasks(storage, key, createExampleTasks).tasks;
+    assert.deepEqual(restored, { ...original, assignee });
+    assert.equal(original.assignee, TEAM[0]);
+  }
+  const before = storage.getItem(key);
+  assert.throws(() => writeTasks(storage, key, [{ ...original, assignee: 'Not a configured member' }]));
+  assert.equal(storage.getItem(key), before);
+  storage.setItem = () => { throw new Error('Quota exceeded'); };
+  assert.throws(() => writeTasks(storage, key, [{ ...original, assignee: TEAM[1] }]), /Quota exceeded/);
+  assert.equal(storage.getItem(key), before);
 });

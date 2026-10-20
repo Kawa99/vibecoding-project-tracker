@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { STAGES, createExampleTasks, newTask, prepareTask, readTasks, writeTasks } from './tasks.js';
+import { STAGES, TEAM, createExampleTasks, newTask, ownerInitials, prepareTask, readTasks, writeTasks } from './tasks.js';
 import TaskEditor from './TaskEditor.jsx';
 import TaskType, { TYPE_STYLES } from './TaskType.jsx';
 
@@ -52,7 +52,7 @@ export function useLocalStorage(key, initialValue) {
   return [state.tasks, save, state.error, state.blocked];
 }
 
-export function TaskBoard({ tasks, onEdit }) {
+export function TaskBoard({ tasks, onEdit, onHandoff, handoffDisabled = false }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       {STAGES.map(stage => {
@@ -77,10 +77,25 @@ export function TaskBoard({ tasks, onEdit }) {
                         <span className="mb-3 flex justify-end"><TaskType type={task.type} /></span>
                         <span className="block break-words text-sm font-semibold">{task.title}</span>
                         {task.id.startsWith('example-') && <span className="mt-1 block text-xs text-text-muted">Example task</span>}
-                        <span className="mt-3 block break-words text-xs text-text-muted">
-                          <span className="font-medium">Owner: </span>{task.assignee}
+                        <span className="mt-3 flex items-center gap-2 text-xs text-text-muted">
+                          <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-column font-semibold text-text-primary">
+                            {ownerInitials(task.assignee)}
+                          </span>
+                          <span className="min-w-0 break-words"><span className="font-medium">Owner: </span>{task.assignee}</span>
                         </span>
                       </button>
+                      <div className="border-t border-border-subtle px-4 pb-4 pt-3">
+                        <label className="block text-xs font-medium text-text-muted">
+                          Hand off to…<span className="sr-only"> for {task.title}</span>
+                          <select value="" disabled={handoffDisabled || TEAM.length < 2}
+                            onChange={event => onHandoff?.(task.id, event.target.value)}
+                            className="mt-1 block min-h-9 w-full rounded-lg border border-control-border bg-surface-card px-2 py-1 text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed">
+                            <option value="" disabled>Choose a member</option>
+                            {TEAM.filter(name => name !== task.assignee).map(name => <option key={name} value={name}>{name}</option>)}
+                          </select>
+                        </label>
+                        {TEAM.length < 2 && <p className="mt-2 text-xs text-text-muted">Add another configured member to enable handoff.</p>}
+                      </div>
                     </article>
                   </li>
                 ))}
@@ -123,6 +138,12 @@ export default function App() {
     }
   }
 
+  function handOff(id, assignee) {
+    setMessage('');
+    const next = tasks.map(task => task.id === id ? { ...task, assignee } : task);
+    if (saveTasks(next)) setMessage(`Assigned to ${assignee}.`);
+  }
+
   return (
     <div className="min-h-screen bg-surface-page p-6 font-sans text-text-primary">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -139,7 +160,7 @@ export default function App() {
         <p className="mb-4 text-sm text-text-muted">Sample members demonstrate ownership. Saved in this browser only; clearing browser data removes your work.</p>
         <p role="status" className="mb-4 text-sm">{message}</p>
         {storageError && !editing && <p role="alert" className="mb-4 text-sm text-due-overdue-text">{storageError}</p>}
-        <TaskBoard tasks={tasks} onEdit={openEditor} />
+        <TaskBoard tasks={tasks} onEdit={openEditor} onHandoff={handOff} handoffDisabled={storageBlocked} />
       </main>
       {editing && <TaskEditor task={editing} onSave={saveTask} onDelete={deleteTask}
         onClose={() => setEditing(null)} storageError={storageError}

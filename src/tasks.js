@@ -44,13 +44,13 @@ export function createExampleTasks() {
       id: 'example-board',
       title: 'Build the four-column board',
       description: 'Show each task in the column matching its status.',
-      type: 'feature', status: 'in-progress', assignee: TEAM[1],
+      type: 'feature', status: 'in-progress', assignee: TEAM[1] || TEAM[0],
     },
     {
       id: 'example-title',
       title: 'Check long task titles stay readable',
       description: 'Verify titles wrap without overflowing their cards.',
-      type: 'bug', status: 'review', assignee: TEAM[2],
+      type: 'bug', status: 'review', assignee: TEAM[2] || TEAM[0],
     },
     {
       id: 'example-design',
@@ -67,6 +67,11 @@ export function createExampleTasks() {
 
 export function localDate(now = new Date()) {
   return [String(now.getFullYear()).padStart(4, '0'), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+}
+
+export function ownerInitials(name) {
+  return name.replace(/\s*\(example\)$/, '').trim().split(/\s+/)
+    .filter(Boolean).slice(0, 2).map(part => Array.from(part)[0]).join('').toUpperCase();
 }
 
 export function isDateOnly(value) {
