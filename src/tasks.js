@@ -29,6 +29,15 @@ export const MEMBERS = [
   { name: 'Riley (example)', email: null, github: null },
 ];
 export const TEAM = MEMBERS.map(member => member.name);
+export const CONTEXT_TOOLS = ['Claude', 'ChatGPT', 'Cursor', 'Lovable', 'Replit', 'Other'];
+export const CONTEXT_TEMPLATE = `## Background
+
+## Constraints
+
+## Tried so far / Outcome
+
+## Pick up / Next steps
+`;
 
 export function createExampleTasks() {
   const now = new Date();
@@ -105,6 +114,9 @@ export function taskErrors(task) {
   if (typeof task.context !== 'string' || task.context.length > 50000) {
     errors.context = 'Keep the context within 50,000 characters.';
   }
+  if (task.contextTool !== null && !CONTEXT_TOOLS.includes(task.contextTool)) {
+    errors.contextTool = 'Choose a supported AI tool or no selection.';
+  }
   return errors;
 }
 
@@ -119,15 +131,13 @@ export function normalizeTasks(value) {
       contextTool: record.contextTool === undefined ? null : record.contextTool,
       contextUpdatedAt: record.contextUpdatedAt === undefined ? null : record.contextUpdatedAt,
     };
-    const validTool = task.contextTool === null ||
-      ['Claude', 'ChatGPT', 'Cursor', 'Lovable', 'Replit', 'Other'].includes(task.contextTool);
     const validTimestamp = task.contextUpdatedAt === null ||
       (typeof task.contextUpdatedAt === 'string' &&
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(task.contextUpdatedAt) &&
         isDateOnly(task.contextUpdatedAt.slice(0, 10)) &&
         Number.isFinite(Date.parse(task.contextUpdatedAt)));
     if (typeof task.id !== 'string' || !task.id.trim() || ids.has(task.id) ||
-        !isDateOnly(task.createdDate) || !validTool || !validTimestamp ||
+        !isDateOnly(task.createdDate) || !validTimestamp ||
         Object.keys(taskErrors(task)).length) {
       throw new Error('Saved tasks contain invalid or duplicate records.');
     }
@@ -140,7 +150,7 @@ export function newTask() {
   return {
     title: '', description: '', type: 'feature', status: 'todo',
     assignee: TEAM.length === 1 ? TEAM[0] : '', dueDate: null,
-    context: '', contextTool: null, contextUpdatedAt: null,
+    context: CONTEXT_TEMPLATE, contextTool: null, contextUpdatedAt: null,
   };
 }
 
@@ -153,6 +163,15 @@ export function prepareTask(draft, original) {
     contextUpdatedAt: draft.context !== (original?.context ?? '')
       ? new Date().toISOString() : (original?.contextUpdatedAt ?? null),
   };
+}
+
+export function contextUpdatedHint(timestamp, now = new Date()) {
+  if (!timestamp) return 'Context not saved yet.';
+  const minutes = Math.max(0, Math.floor((now.getTime() - Date.parse(timestamp)) / 60000));
+  if (minutes < 1) return 'Context updated just now.';
+  const [amount, unit] = minutes < 60 ? [minutes, 'minute']
+    : minutes < 1440 ? [Math.floor(minutes / 60), 'hour'] : [Math.floor(minutes / 1440), 'day'];
+  return `Context updated ${new Intl.RelativeTimeFormat('en').format(-amount, unit)}.`;
 }
 
 export function readTasks(storage, key, initialValue) {

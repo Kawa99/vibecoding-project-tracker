@@ -11,6 +11,7 @@ const { default: App, TaskBoard, createExampleTasks, STAGES, TEAM, MEMBERS } =
 const { default: TaskEditor } = await server.ssrLoadModule('/src/TaskEditor.jsx');
 const { default: TaskType } = await server.ssrLoadModule('/src/TaskType.jsx');
 const { default: DeadlineBadge } = await server.ssrLoadModule('/src/DeadlineBadge.jsx');
+const { CONTEXT_TEMPLATE, CONTEXT_TOOLS, newTask } = await server.ssrLoadModule('/src/tasks.js');
 
 test('example tasks satisfy the task model and use configured sample members', () => {
   const tasks = createExampleTasks();
@@ -69,7 +70,7 @@ test('shared editor exposes labelled task controls, saved values and save/cancel
   assert.ok(html.includes('<dialog'));
   assert.ok(html.includes('aria-labelledby="task-editor-title"'));
   assert.ok(html.includes('Edit task'));
-  for (const field of ['title', 'description', 'type', 'status', 'assignee', 'dueDate', 'context']) {
+  for (const field of ['title', 'description', 'type', 'status', 'assignee', 'dueDate', 'context', 'contextTool']) {
     assert.ok(html.includes(`for="${field}"`));
     assert.ok(html.includes(`name="${field}"`));
   }
@@ -186,4 +187,21 @@ test('deadline badges show four treatments with text/icons while preserving task
   assert.ok(html.includes('text-type-feature'));
   assert.ok(html.includes('Overdue'));
   assert.ok(html.includes('</svg>Feature</span>'));
+});
+
+test('context section shows its template, tool choices and accessible saved/unsaved time hints', () => {
+  const fresh = renderToStaticMarkup(React.createElement(TaskEditor, { task: newTask(), fallbackFocus: { current: null } }));
+  assert.ok(fresh.includes(CONTEXT_TEMPLATE));
+  assert.ok(fresh.includes('Context not saved yet.'));
+  assert.ok(fresh.includes('aria-describedby="context-hint"'));
+  assert.ok(fresh.includes('Plain text or Markdown.'));
+  assert.ok(fresh.indexOf('name="contextTool"') > fresh.indexOf('name="context"'));
+  assert.ok(fresh.includes('No tool selected'));
+  for (const tool of CONTEXT_TOOLS) assert.ok(fresh.includes(`value="${tool}"`));
+  const task = { ...createExampleTasks()[0], context: '', contextTool: 'Claude', contextUpdatedAt: '2000-01-01T00:00:00Z' };
+  const existing = renderToStaticMarkup(React.createElement(TaskEditor, { task, fallbackFocus: { current: null } }));
+  assert.ok(!existing.includes('## Background'), 'cleared contexts stay empty');
+  assert.ok(existing.includes('value="Claude" selected=""'));
+  assert.ok(existing.includes('Context updated'));
+  assert.match(existing, /<time\b[^>]*datetime="2000-01-01T00:00:00Z"/i);
 });

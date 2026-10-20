@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { STAGES, TEAM, taskErrors } from './tasks.js';
+import { CONTEXT_TOOLS, STAGES, TEAM, contextUpdatedHint, taskErrors } from './tasks.js';
+import { watchDeadlineClock } from './deadlines.js';
 import TaskType, { TYPE_STYLES } from './TaskType.jsx';
 
 const control = 'mt-1 block w-full rounded-lg border border-control-border bg-surface-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2';
@@ -10,6 +11,8 @@ export default function TaskEditor({ task, onSave, onDelete, onClose, storageErr
   const [draft, setDraft] = useState(() => ({ ...task }));
   const [errors, setErrors] = useState({});
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [, setTick] = useState(0);
+  useEffect(() => watchDeadlineClock(() => setTick(tick => tick + 1)), []);
 
   useEffect(() => {
     const element = dialog.current;
@@ -45,6 +48,7 @@ export default function TaskEditor({ task, onSave, onDelete, onClose, storageErr
     { name: 'assignee', label: 'Owner', required: true, options: [{ id: '', label: 'Choose an owner' }, ...TEAM.map(name => ({ id: name, label: name }))] },
     { name: 'dueDate', label: 'Due date', inputType: 'date' },
     { name: 'context', label: 'Context', multiline: true },
+    { name: 'contextTool', label: 'AI tool', options: [{ id: '', label: 'No tool selected' }, ...CONTEXT_TOOLS.map(tool => ({ id: tool, label: tool }))] },
   ];
 
   return (
@@ -68,12 +72,12 @@ export default function TaskEditor({ task, onSave, onDelete, onClose, storageErr
               id: field.name, name: field.name, value: draft[field.name] ?? '',
               required: field.required, autoFocus: field.name === 'title',
               'aria-invalid': errors[field.name] ? true : undefined,
-              'aria-describedby': errors[field.name] ? `${field.name}-error` : undefined,
+              'aria-describedby': [field.name === 'context' ? 'context-hint' : '', errors[field.name] ? `${field.name}-error` : ''].filter(Boolean).join(' ') || undefined,
               className: control + (field.name === 'context' ? ' min-h-40 font-mono' : '') +
                 (field.name === 'type' ? ` ${TYPE_STYLES[draft.type]?.text || ''}` : ''),
               onChange: event => {
                 const value = event.target.value;
-                setDraft(current => ({ ...current, [field.name]: field.name === 'dueDate' ? value || null : value }));
+                setDraft(current => ({ ...current, [field.name]: ['dueDate', 'contextTool'].includes(field.name) ? value || null : value }));
                 setErrors(current => ({ ...current, [field.name]: undefined }));
               },
             };
@@ -90,6 +94,17 @@ export default function TaskEditor({ task, onSave, onDelete, onClose, storageErr
                   <textarea {...props} rows={field.name === 'context' ? 8 : 3} />
                 ) : (
                   <input {...props} type={field.inputType || 'text'} />
+                )}
+                {field.name === 'context' && (
+                  <p id="context-hint" className="mt-1 text-xs text-text-muted">
+                    Plain text or Markdown.{' '}
+                    {task.contextUpdatedAt ? (
+                      <time dateTime={task.contextUpdatedAt} title={new Date(task.contextUpdatedAt).toLocaleString()}>
+                        {contextUpdatedHint(task.contextUpdatedAt)}
+                      </time>
+                    ) : 'Context not saved yet.'}
+                    {draft.context !== task.context && ' Unsaved changes; save task to update context.'}
+                  </p>
                 )}
                 {errors[field.name] && <p id={`${field.name}-error`} role="alert" className="mt-1 text-sm text-due-overdue-text">{errors[field.name]}</p>}
               </div>
