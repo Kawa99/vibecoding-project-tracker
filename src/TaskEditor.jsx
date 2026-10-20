@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CONTEXT_TOOLS, STAGES, TEAM, contextUpdatedHint, taskErrors } from './tasks.js';
 import { watchDeadlineClock } from './deadlines.js';
 import TaskType, { TYPE_STYLES } from './TaskType.jsx';
+import CopyContext from './CopyContext.jsx';
 
 const control = 'mt-1 block w-full rounded-lg border border-control-border bg-surface-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2';
 const button = 'min-h-9 rounded-lg border border-control-border px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2';
@@ -111,6 +112,7 @@ export default function TaskEditor({ task, onSave, onDelete, onClose, storageErr
             );
           })}
         </div>
+        <div className="mt-4"><CopyContext task={draft} /></div>
         <footer className="mt-6">
           {confirmDelete ? (
             <div>

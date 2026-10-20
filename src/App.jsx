@@ -3,6 +3,7 @@ import { STAGES, TEAM, createExampleTasks, newTask, ownerInitials, prepareTask, 
 import TaskEditor from './TaskEditor.jsx';
 import TaskType, { TYPE_STYLES } from './TaskType.jsx';
 import DeadlineBadge from './DeadlineBadge.jsx';
+import CopyContext from './CopyContext.jsx';
 import { getDeadline, watchDeadlineClock } from './deadlines.js';
 
 export { STAGES, MEMBERS, TEAM, createExampleTasks } from './tasks.js';
@@ -92,6 +93,7 @@ export function TaskBoard({ tasks, onEdit, onHandoff, handoffDisabled = false })
                         <span className="mt-3 block"><DeadlineBadge task={task} now={now} /></span>
                       </button>
                       <div className="border-t border-border-subtle px-4 pb-4 pt-3">
+                        <div className="mb-3"><CopyContext task={task} /></div>
                         <label className="block text-xs font-medium text-text-muted">
                           Hand off to…<span className="sr-only"> for {task.title}</span>
                           <select value="" disabled={handoffDisabled || TEAM.length < 2}

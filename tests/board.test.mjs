@@ -205,3 +205,21 @@ test('context section shows its template, tool choices and accessible saved/unsa
   assert.ok(existing.includes('Context updated'));
   assert.match(existing, /<time\b[^>]*datetime="2000-01-01T00:00:00Z"/i);
 });
+
+test('each card and the modal expose a separate non-submit Copy Context button', () => {
+  const tasks = createExampleTasks();
+  const html = renderToStaticMarkup(React.createElement(TaskBoard, { tasks }));
+  const cards = [...html.matchAll(/<article\b[^>]*>(.*?)<\/article>/g)].map(match => match[1]);
+  assert.equal(cards.length, tasks.length);
+  for (const [index, card] of cards.entries()) {
+    const buttons = [...card.matchAll(/<button\b[^>]*>.*?<\/button>/g)].map(match => match[0]);
+    const copy = buttons.filter(button => button.includes('Copy Context'));
+    assert.equal(copy.length, 1);
+    assert.ok(copy[0].includes('type="button"'));
+    assert.ok(copy[0].includes(`Copy Context for ${tasks[index].title}`));
+    assert.ok(!buttons.find(button => button.includes('Edit task:')).includes('Copy Context'));
+  }
+  const draft = { ...newTask(), title: 'Visible draft title' };
+  const modal = renderToStaticMarkup(React.createElement(TaskEditor, { task: draft, fallbackFocus: { current: null } }));
+  assert.match(modal, /<button\b[^>]*type="button"[^>]*aria-label="Copy Context for Visible draft title"/);
+});
