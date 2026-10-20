@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { STAGES, TEAM, taskErrors } from './tasks.js';
+import TaskType, { TYPE_STYLES } from './TaskType.jsx';
 
 const control = 'mt-1 block w-full rounded-lg border border-control-border bg-surface-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2';
 const button = 'min-h-9 rounded-lg border border-control-border px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2';
@@ -49,10 +50,11 @@ export default function TaskEditor({ task, onSave, onDelete, onClose, storageErr
   return (
     <dialog ref={dialog} aria-labelledby="task-editor-title"
       onCancel={event => { event.preventDefault(); onClose(); }}
-      className="m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-[640px] overflow-y-auto rounded-lg border border-border-subtle bg-surface-card p-6 text-text-primary backdrop:bg-text-primary/50">
+      className={`m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-[640px] overflow-y-auto rounded-lg border border-border-subtle border-l-4 bg-surface-card p-6 text-text-primary backdrop:bg-text-primary/50 ${TYPE_STYLES[draft.type]?.border || ''}`}>
       <header className="mb-4 flex items-start justify-between gap-4">
         <div>
           <h2 id="task-editor-title" className="text-base font-semibold">{task.id ? 'Edit task' : 'New task'}</h2>
+          <div className="mt-2"><TaskType type={draft.type} /></div>
           <p className="mt-1 text-xs text-text-muted">Required fields are marked *. Save to keep your changes.</p>
           {task.createdDate && <p className="mt-1 text-xs text-text-muted">Created {task.createdDate}</p>}
         </div>
@@ -67,7 +69,8 @@ export default function TaskEditor({ task, onSave, onDelete, onClose, storageErr
               required: field.required, autoFocus: field.name === 'title',
               'aria-invalid': errors[field.name] ? true : undefined,
               'aria-describedby': errors[field.name] ? `${field.name}-error` : undefined,
-              className: control + (field.name === 'context' ? ' min-h-40 font-mono' : ''),
+              className: control + (field.name === 'context' ? ' min-h-40 font-mono' : '') +
+                (field.name === 'type' ? ` ${TYPE_STYLES[draft.type]?.text || ''}` : ''),
               onChange: event => {
                 const value = event.target.value;
                 setDraft(current => ({ ...current, [field.name]: field.name === 'dueDate' ? value || null : value }));
@@ -80,7 +83,9 @@ export default function TaskEditor({ task, onSave, onDelete, onClose, storageErr
                   {field.label}{field.required ? ' *' : ' (optional)'}
                 </label>
                 {field.options ? (
-                  <select {...props}>{field.options.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
+                  <select {...props}>{field.options.map(option => (
+                    <option key={option.id} value={option.id} className={field.name === 'type' ? TYPE_STYLES[option.id]?.text : undefined}>{option.label}</option>
+                  ))}</select>
                 ) : field.multiline ? (
                   <textarea {...props} rows={field.name === 'context' ? 8 : 3} />
                 ) : (

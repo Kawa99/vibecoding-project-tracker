@@ -79,7 +79,7 @@ test('reload retains edits, status movement, deletion and an intentionally empty
   let restored = readTasks(storage, key, createExampleTasks);
   assert.equal(restored.isNew, false);
   assert.equal(restored.tasks.length, 5);
-  const changed = prepareTask({ ...draft, title: 'Edited', status: 'review', dueDate: '2026-12-31' }, draft);
+  const changed = prepareTask({ ...draft, title: 'Edited', type: 'bug', status: 'review', dueDate: '2026-12-31' }, draft);
   writeTasks(storage, key, restored.tasks.map(task => task.id === draft.id ? changed : task));
   restored = readTasks(storage, key, createExampleTasks);
   assert.deepEqual(restored.tasks.find(task => task.id === draft.id), changed);

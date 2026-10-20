@@ -9,6 +9,7 @@ after(() => server.close());
 const { default: App, TaskBoard, createExampleTasks, STAGES, TEAM, MEMBERS } =
   await server.ssrLoadModule('/src/App.jsx');
 const { default: TaskEditor } = await server.ssrLoadModule('/src/TaskEditor.jsx');
+const { default: TaskType } = await server.ssrLoadModule('/src/TaskType.jsx');
 
 test('example tasks satisfy the task model and use configured sample members', () => {
   const tasks = createExampleTasks();
@@ -100,4 +101,28 @@ test('app restores saved data and keeps an intentionally empty board empty', () 
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
   }
+});
+
+test('Feature and Bug use consistent colours, distinct icons and text in cards and the editor', () => {
+  const icons = [];
+  for (const [type, label] of [['feature', 'Feature'], ['bug', 'Bug']]) {
+    const task = { ...createExampleTasks()[0], type };
+    const board = renderToStaticMarkup(React.createElement(TaskBoard, { tasks: [task] }));
+    const editor = renderToStaticMarkup(React.createElement(TaskEditor, {
+      task, fallbackFocus: { current: null },
+    }));
+    const badge = renderToStaticMarkup(React.createElement(TaskType, { type }));
+    for (const html of [board, editor]) {
+      assert.ok(html.includes(`border-l-type-${type}`));
+      assert.ok(html.includes(`text-type-${type}`));
+      assert.ok(html.includes(badge), 'both surfaces render the same labelled icon');
+    }
+    assert.ok(badge.includes(`</svg>${label}</span>`));
+    assert.ok(badge.includes('aria-hidden="true"'));
+    assert.ok(badge.includes('focusable="false"'));
+    assert.ok(board.includes(`, ${label}, owner:`));
+    icons.push(badge.match(/<svg.*?<\/svg>/)[0]);
+  }
+  assert.notEqual(icons[0], icons[1], 'type remains distinguishable without colour');
+  assert.equal(renderToStaticMarkup(React.createElement(TaskType, { type: 'unsupported' })), '');
 });

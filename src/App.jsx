@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { STAGES, createExampleTasks, newTask, prepareTask, readTasks, writeTasks } from './tasks.js';
 import TaskEditor from './TaskEditor.jsx';
+import TaskType, { TYPE_STYLES } from './TaskType.jsx';
 
 export { STAGES, MEMBERS, TEAM, createExampleTasks } from './tasks.js';
 
@@ -69,10 +70,11 @@ export function TaskBoard({ tasks, onEdit }) {
               <ul className="space-y-3">
                 {stageTasks.map(task => (
                   <li key={task.id}>
-                    <article className="min-w-0 rounded-lg border border-border-subtle bg-surface-card">
+                    <article className={`min-w-0 rounded-lg border border-border-subtle border-l-4 bg-surface-card ${TYPE_STYLES[task.type]?.border || ''}`}>
                       <button type="button" onClick={() => onEdit?.(task)}
-                        aria-label={`Edit task: ${task.title}, owner: ${task.assignee}`}
+                        aria-label={`Edit task: ${task.title}, ${TYPE_STYLES[task.type]?.label || task.type}, owner: ${task.assignee}`}
                         className="block w-full rounded-lg p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2">
+                        <span className="mb-3 flex justify-end"><TaskType type={task.type} /></span>
                         <span className="block break-words text-sm font-semibold">{task.title}</span>
                         {task.id.startsWith('example-') && <span className="mt-1 block text-xs text-text-muted">Example task</span>}
                         <span className="mt-3 block break-words text-xs text-text-muted">
