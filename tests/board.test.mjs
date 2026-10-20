@@ -10,6 +10,7 @@ const { default: App, TaskBoard, createExampleTasks, STAGES, TEAM, MEMBERS } =
   await server.ssrLoadModule('/src/App.jsx');
 const { default: TaskEditor } = await server.ssrLoadModule('/src/TaskEditor.jsx');
 const { default: TaskType } = await server.ssrLoadModule('/src/TaskType.jsx');
+const { default: DeadlineBadge } = await server.ssrLoadModule('/src/DeadlineBadge.jsx');
 
 test('example tasks satisfy the task model and use configured sample members', () => {
   const tasks = createExampleTasks();
@@ -25,7 +26,7 @@ test('example tasks satisfy the task model and use configured sample members', (
     assert.ok(STAGES.some(stage => stage.id === task.status));
     assert.ok(TEAM.includes(task.assignee));
     assert.equal(task.createdDate, today);
-    assert.equal(task.dueDate, null);
+    assert.match(task.dueDate, /^\d{4}-\d{2}-\d{2}$/);
     assert.equal(task.context, '');
     assert.equal(task.contextTool, null);
     assert.equal(task.contextUpdatedAt, null);
@@ -160,4 +161,29 @@ test('one-member configuration keeps examples valid and explains disabled handof
   } finally {
     TEAM.splice(0, TEAM.length, ...originalTeam);
   }
+});
+
+test('deadline badges show four treatments with text/icons while preserving task type', () => {
+  const now = new Date(2026, 0, 10, 12);
+  const example = createExampleTasks()[0];
+  const cases = [
+    { dueDate: '2026-01-15', status: 'todo', state: 'safe', label: 'Due 2026-01-15' },
+    { dueDate: '2026-01-10', status: 'todo', state: 'warning', label: 'Due today' },
+    { dueDate: '2026-01-09', status: 'todo', state: 'overdue', label: 'Overdue' },
+    { dueDate: '2026-01-09', status: 'done', state: 'neutral', label: 'Done' },
+    { dueDate: null, status: 'todo', state: 'neutral', label: 'No due date' },
+  ];
+  for (const { state, label, ...values } of cases) {
+    const html = renderToStaticMarkup(React.createElement(DeadlineBadge, { task: { ...example, ...values }, now }));
+    assert.ok(html.includes(`bg-due-${state}`));
+    assert.ok(html.includes(`text-due-${state}-text`));
+    assert.ok(html.includes(label));
+    assert.ok(html.includes('aria-hidden="true"'));
+  }
+  const overdue = { ...example, dueDate: '2000-01-01', status: 'todo', type: 'feature' };
+  const html = renderToStaticMarkup(React.createElement(TaskBoard, { tasks: [overdue] }));
+  assert.ok(html.includes('bg-due-overdue'));
+  assert.ok(html.includes('text-type-feature'));
+  assert.ok(html.includes('Overdue'));
+  assert.ok(html.includes('</svg>Feature</span>'));
 });

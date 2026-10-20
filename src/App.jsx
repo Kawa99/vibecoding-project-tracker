@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { STAGES, TEAM, createExampleTasks, newTask, ownerInitials, prepareTask, readTasks, writeTasks } from './tasks.js';
 import TaskEditor from './TaskEditor.jsx';
 import TaskType, { TYPE_STYLES } from './TaskType.jsx';
+import DeadlineBadge from './DeadlineBadge.jsx';
+import { getDeadline, watchDeadlineClock } from './deadlines.js';
 
 export { STAGES, MEMBERS, TEAM, createExampleTasks } from './tasks.js';
 
@@ -53,6 +55,10 @@ export function useLocalStorage(key, initialValue) {
 }
 
 export function TaskBoard({ tasks, onEdit, onHandoff, handoffDisabled = false }) {
+  const [, setTick] = useState(0);
+  useEffect(() => watchDeadlineClock(() => setTick(tick => tick + 1)), []);
+  const now = new Date();
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       {STAGES.map(stage => {
@@ -72,7 +78,7 @@ export function TaskBoard({ tasks, onEdit, onHandoff, handoffDisabled = false })
                   <li key={task.id}>
                     <article className={`min-w-0 rounded-lg border border-border-subtle border-l-4 bg-surface-card ${TYPE_STYLES[task.type]?.border || ''}`}>
                       <button type="button" onClick={() => onEdit?.(task)}
-                        aria-label={`Edit task: ${task.title}, ${TYPE_STYLES[task.type]?.label || task.type}, owner: ${task.assignee}`}
+                        aria-label={`Edit task: ${task.title}, ${TYPE_STYLES[task.type]?.label || task.type}, owner: ${task.assignee}, ${getDeadline(task, now).label}`}
                         className="block w-full rounded-lg p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2">
                         <span className="mb-3 flex justify-end"><TaskType type={task.type} /></span>
                         <span className="block break-words text-sm font-semibold">{task.title}</span>
@@ -83,6 +89,7 @@ export function TaskBoard({ tasks, onEdit, onHandoff, handoffDisabled = false })
                           </span>
                           <span className="min-w-0 break-words"><span className="font-medium">Owner: </span>{task.assignee}</span>
                         </span>
+                        <span className="mt-3 block"><DeadlineBadge task={task} now={now} /></span>
                       </button>
                       <div className="border-t border-border-subtle px-4 pb-4 pt-3">
                         <label className="block text-xs font-medium text-text-muted">

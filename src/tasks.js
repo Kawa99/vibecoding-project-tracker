@@ -31,7 +31,12 @@ export const MEMBERS = [
 export const TEAM = MEMBERS.map(member => member.name);
 
 export function createExampleTasks() {
-  const createdDate = localDate();
+  const now = new Date();
+  const createdDate = localDate(now);
+  const future = new Date(now);
+  future.setDate(future.getDate() + 3);
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
 
   return [
     {
@@ -59,7 +64,9 @@ export function createExampleTasks() {
       type: 'feature', status: 'done', assignee: TEAM[0],
     },
   ].map(task => ({
-    ...task, dueDate: null, createdDate,
+    ...task, createdDate,
+    dueDate: task.status === 'todo' ? localDate(future)
+      : task.status === 'in-progress' ? createdDate : localDate(yesterday),
     context: '', contextTool: null, contextUpdatedAt: null,
   }));
 }
