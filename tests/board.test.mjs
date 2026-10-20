@@ -14,6 +14,7 @@ const { default: DeadlineBadge } = await server.ssrLoadModule('/src/DeadlineBadg
 const { CONTEXT_TEMPLATE, CONTEXT_TOOLS, newTask } = await server.ssrLoadModule('/src/tasks.js');
 const { AnchorSlot } = await server.ssrLoadModule('/src/AnchorBoard.jsx');
 const { createAnchors } = await server.ssrLoadModule('/src/anchors.js');
+const { default: ThemeToggle } = await server.ssrLoadModule('/src/ThemeToggle.jsx');
 
 test('example tasks satisfy the task model and use configured sample members', () => {
   const tasks = createExampleTasks();
@@ -271,4 +272,29 @@ test('four deliverables stay above the board and bad anchor data does not break 
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
   }
+});
+
+test('drag handles are separate from card actions and retain the labelled modal Status alternative', () => {
+  const tasks = createExampleTasks();
+  const html = renderToStaticMarkup(React.createElement(TaskBoard, { tasks, onMove() {} }));
+  assert.equal((html.match(/draggable="true"/g) || []).length, tasks.length);
+  const cards = [...html.matchAll(/<article\b[^>]*>(.*?)<\/article>/g)].map(match => match[1]);
+  for (const card of cards) {
+    const handle = card.match(/<button\b[^>]*draggable="true".*?<\/button>/)[0];
+    assert.ok(handle.includes('aria-label="Drag task:'));
+    assert.ok(handle.includes('aria-describedby="move-help"'));
+    assert.ok(!handle.includes('Edit task:'));
+    assert.ok(!handle.includes('Copy Context'));
+    assert.ok(!handle.includes('<select'));
+  }
+  assert.ok(html.includes('edit the task and choose Status'));
+  const blocked = renderToStaticMarkup(React.createElement(TaskBoard, { tasks, onMove() {}, handoffDisabled: true }));
+  assert.equal((blocked.match(/draggable="false" disabled=""/g) || []).length, tasks.length);
+});
+
+test('theme toggle describes its next action with a visible label and decorative icon', () => {
+  const html = renderToStaticMarkup(React.createElement(ThemeToggle));
+  assert.ok(html.includes('aria-label="Switch to dark theme"'));
+  assert.ok(html.includes('aria-hidden="true"'));
+  assert.ok(html.includes('focus-visible:ring-brand-primary'));
 });

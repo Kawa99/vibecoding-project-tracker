@@ -24,6 +24,12 @@ export const STAGES = [
   { id: 'done',        label: 'Done' },
 ];
 
+export function moveTask(tasks, id, status) {
+  const task = tasks.find(item => item.id === id);
+  if (!task || task.status === status || !STAGES.some(stage => stage.id === status)) return tasks;
+  return tasks.map(item => item.id === id ? { ...item, status } : item);
+}
+
 // Sample profiles demonstrate ownership without implying real collaborators.
 export const MEMBERS = [
   { name: 'Alex (example)', email: null, github: null },

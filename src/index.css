@@ -2,6 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+  --brand-primary: 109 40 217;
+  --brand-accent: 91 33 182;
+  --surface-page: 250 250 249;
+  --surface-card: 255 255 255;
+  --surface-column: 245 245 244;
+  --text-primary: 28 25 23;
+  --text-muted: 87 83 78;
+  --text-on-brand: 255 255 255;
+  --border-subtle: 231 229 228;
+  --control-border: 120 113 108;
+  --type-feature: 15 118 110;
+  --type-bug: 190 18 60;
+  --due-safe: 240 253 250;
+  --due-safe-text: 17 94 89;
+  --due-warning: 255 251 235;
+  --due-warning-text: 146 64 14;
+  --due-overdue: 255 241 242;
+  --due-overdue-text: 159 18 57;
+  --due-neutral: 245 245 244;
+  --due-neutral-text: 87 83 78;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand-primary: 196 181 253;
+  --brand-accent: 221 214 254;
+  --surface-page: 28 25 23;
+  --surface-card: 41 37 36;
+  --surface-column: 33 30 28;
+  --text-primary: 245 245 244;
+  --text-muted: 214 211 209;
+  --text-on-brand: 28 25 23;
+  --border-subtle: 87 83 78;
+  --control-border: 168 162 158;
+  --type-feature: 94 234 212;
+  --type-bug: 253 164 175;
+  --due-safe: 19 78 74;
+  --due-safe-text: 153 246 228;
+  --due-warning: 69 26 3;
+  --due-warning-text: 253 230 138;
+  --due-overdue: 76 5 25;
+  --due-overdue-text: 254 205 211;
+  --due-neutral: 68 64 60;
+  --due-neutral-text: 231 229 228;
+}
+
+/* The offset contrasts with the focus ring in both palettes. */
+*, ::before, ::after {
+  --tw-ring-offset-color: rgb(var(--surface-card));
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
 html, body, #root {
   height: 100%;
 }
@@ -9,6 +66,6 @@ html, body, #root {
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f8fafc; /* slate-50 */
-  color: #0f172a;            /* slate-900 */
+  background-color: rgb(var(--surface-page));
+  color: rgb(var(--text-primary));
 }

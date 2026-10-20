@@ -29,12 +29,14 @@ export function AnchorSlot({ anchor, onSave, blocked = false }) {
 
   return (
     <form noValidate onSubmit={event => { event.preventDefault(); save(draft); }}
-      aria-labelledby={`anchor-${anchor.id}-title`} className="min-w-0 rounded-lg border border-border-subtle bg-surface-card p-4">
-      <h3 id={`anchor-${anchor.id}-title`} className="text-sm font-semibold">{anchor.label}</h3>
-      <p className="my-3 flex items-center gap-2 text-xs text-text-muted">
-        <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full border ${anchor.url ? 'border-type-feature bg-type-feature' : 'border-control-border'}`} />
-        {blocked ? 'Unavailable' : anchor.url ? 'Link saved' : 'No link'}
-      </p>
+      aria-labelledby={`anchor-${anchor.id}-title`} className="min-w-0 rounded-lg border border-border-subtle bg-surface-card p-3">
+      <div className="flex items-center justify-between gap-2">
+        <h3 id={`anchor-${anchor.id}-title`} className="text-sm font-semibold">{anchor.label}</h3>
+        <p role="status" className="m-0 flex shrink-0 items-center gap-2 text-xs text-text-muted">
+          <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full border ${anchor.url ? 'border-type-feature bg-type-feature' : 'border-control-border'}`} />
+          {blocked ? 'Unavailable' : anchor.url ? 'Link saved' : 'No link'}
+        </p>
+      </div>
       <label htmlFor={`anchor-${anchor.id}-url`} className="text-xs font-medium">{anchor.label} URL</label>
       <input ref={input} id={`anchor-${anchor.id}-url`} type="url" value={draft}
         aria-invalid={error ? true : undefined} aria-describedby={error ? `anchor-${anchor.id}-error` : undefined}
@@ -60,7 +62,7 @@ export default function AnchorBoard() {
   }
 
   return (
-    <section aria-labelledby="deliverables-title" className="mb-6">
+    <section aria-labelledby="deliverables-title" className="mb-6 rounded-xl border border-border-subtle bg-surface-column p-4 shadow-sm sm:p-5">
       <h2 id="deliverables-title" className="text-base font-semibold">Deliverables</h2>
       <p className="mb-4 mt-1 text-xs text-text-muted">A saved link records its location; it does not verify the deliverable is complete.</p>
       {error && <p role="alert" className="mb-4 text-sm text-due-overdue-text">Deliverables: {error}</p>}

@@ -1,7 +1,7 @@
 # Vibecoding Project Tracker — Design
 
-**Milestone:** M3 `design-done`. Design decisions and Tailwind tokens are complete; components are implemented in later milestones.
-**Basis:** Current PRD core requirements, particularly FR-08–12, FR-15–17, FR-19–28 and NFR-02–05. Individual development still produces a tool with member ownership and handoff.
+**Milestones:** M3 `design-done`, updated for M12 `secret-sauce`: task dragging and accessible light/dark themes. The M12 choices supersede the earlier exclusion of a dark-mode toggle.
+**Basis:** Current PRD core requirements, particularly FR-08–12, FR-15–17, FR-19–28, FR-31–32 and NFR-02–05. Individual development still produces a tool with member ownership and handoff.
 
 ## 1. Mood / vibe
 
@@ -17,7 +17,7 @@ Avoid a marketing-style hero, glass panels, gradients, oversized empty space, ne
 
 ## 2. Colour palette
 
-These are the default light-theme tokens in `tailwind.config.js`. Use complete utility names such as `bg-surface-card`, `text-text-muted`, `border-control-border` and `focus-visible:ring-brand-primary`. Apply `bg-surface-page text-text-primary font-sans` to the app shell when building M4; the starter page is not restyled by this milestone.
+The light palette below is preserved. `tailwind.config.js` maps semantic utility names to RGB CSS variables in `src/index.css`; `data-theme` on the document root changes the palette for every surface, including native dialog content, form controls, anchors and notifications. Use complete utility names such as `bg-surface-card`, `text-text-muted`, `border-control-border` and `focus-visible:ring-brand-primary`. Apply `bg-surface-page text-text-primary font-sans` to the app shell.
 
 ### Brand and surfaces
 
@@ -41,7 +41,7 @@ These are the default light-theme tokens in `tailwind.config.js`. Use complete u
 | `type-feature` | `#0F766E` | Feature accent stripe, icon and “Feature” text |
 | `type-bug` | `#BE123C` | Bug accent stripe, icon and “Bug” text |
 
-Cards keep their white surface. Type uses a narrow left stripe plus a labelled icon, while urgency uses a separate small badge. Never recolour the whole task solely by its type: an overdue feature must still be identifiable as a feature. Keep these type treatments consistent in the modal.
+Cards keep their theme's neutral card surface. Type uses a narrow left stripe plus a labelled icon, while urgency uses a separate small badge. Never recolour the whole task solely by its type: an overdue feature must still be identifiable as a feature. Keep these type treatments consistent in the modal.
 
 Use simple inline SVG symbols with text (plus-in-a-circle for Feature, exclamation-in-a-circle for Bug); decorative SVGs are hidden from assistive technology. No icon library or custom illustration system is needed. Existing `feature` and `bug` config names remain aliases of the corresponding type colours for starter compatibility.
 
@@ -58,13 +58,31 @@ Use both background and matching foreground tokens for urgency badges. Add text 
 
 Follow the PRD's current proposed policy, which supersedes the starter's ambiguous interval: local deadline is the next midnight after the due date; more than 0 through 24 hours is warning, more than 24 through 48 hours is also warning with “Due soon”, beyond 48 hours is calm, and at/after the deadline is overdue. Refresh at least once per minute while visible and on tab reactivation. These rules belong to M8 logic, not stored colour fields.
 
+### Dark palette — M12
+
+The dark workbench uses warm charcoal surfaces, pale violet actions and brighter task accents. Semantic names and meanings are identical in both themes.
+
+| Token | Dark hex | Use |
+|---|---|---|
+| `brand-primary` / `brand-accent` | `#C4B5FD` / `#DDD6FE` | Actions, links, focus / hover |
+| `surface-page` / `surface-card` / `surface-column` | `#1C1917` / `#292524` / `#211E1C` | Page / cards, fields, dialog / columns |
+| `text-primary` / `text-muted` / `text-on-brand` | `#F5F5F4` / `#D6D3D1` / `#1C1917` | Main / secondary / primary-button text |
+| `border-subtle` / `control-border` | `#57534E` / `#A8A29E` | Decorative separators / essential boundaries |
+| `type-feature` / `type-bug` | `#5EEAD4` / `#FDA4AF` | Feature / Bug stripes, text and icons |
+| `due-safe` / `due-safe-text` | `#134E4A` / `#99F6E4` | Calm badge |
+| `due-warning` / `due-warning-text` | `#451A03` / `#FDE68A` | Due today / soon badge |
+| `due-overdue` / `due-overdue-text` | `#4C0519` / `#FECDD3` | Overdue badge / standalone error text |
+| `due-neutral` / `due-neutral-text` | `#44403C` / `#E7E5E4` | Done / no-date badge |
+
+On first visit, read the system colour preference before rendering the app. Follow system changes until an explicit choice is made. The header toggle says and is accessibly labelled “Switch to dark theme” or “Switch to light theme”, describing the next action; its sun/moon symbol is decorative. Save only explicit choices under `vibetracker.theme`, independently of board data. Restore that choice on reload even if the system differs. If preference storage fails, apply the choice for this visit and show an alert explaining that it was not saved. Native controls use the matching `color-scheme`.
+
 ### Contrast and states
 
 - Meet PRD NFR-03: at least 4.5:1 for normal text and 3:1 for large text and essential boundaries/focus indicators.
-- Use `text-primary` and `text-muted` on page/card/column surfaces. Type text sits on the white card/dialog surface. Deadline text uses its matched badge background.
-- Primary buttons use `text-on-brand` on `brand-primary` or `brand-accent`; links use violet on the light surfaces and are underlined.
-- Controls use `control-border`, not `border-subtle`, as their identifying boundary. Use a 2px violet focus ring with a 2px white offset; focus must remain visible on primary buttons too.
-- Error text uses `due-overdue-text` on white, linked to its field; an icon and message accompany any error border.
+- Use `text-primary` and `text-muted` on page/card/column surfaces. Type text sits on the theme's card/dialog surface. Deadline text uses its matched badge background.
+- Primary buttons use `text-on-brand` on `brand-primary` or `brand-accent`; links use the theme's violet on neutral surfaces and are underlined.
+- Controls use `control-border`, not `border-subtle`, as their identifying boundary. Use a 2px violet focus ring with a 2px card-surface offset in both themes; focus must remain visible on primary buttons too.
+- Error text uses `due-overdue-text` on the theme's neutral surfaces, linked to its field; a message accompanies any error border.
 - Disabled controls retain readable text, explain unavailable actions, and use a disabled cursor without relying on reduced opacity.
 - Default palette contrast is verified numerically. Later colour customization (FR-18, Planned) must validate contrast before saving and provide Restore defaults; it is not part of M3.
 
@@ -90,15 +108,17 @@ Use sentence case for scanability; keep the four exact PRD stage labels. Render 
 
 ## 4. Component principles
 
-- **Layout:** A compact header, four equal deliverable slots, then four equal Kanban columns; use 24px page padding, 24px between major sections, 16px column gaps and 12px card gaps on a 4px spacing scale.
-- **Cards:** White surface, 1px subtle border, 8px corners and 16px padding; show title, type, owner and urgency, with Copy Context as a separate real button rather than nesting it inside another button.
+- **Layout:** A distinct theme card-surface top bar with a thin violet top edge and subtle bottom divider; inside it, place a small uppercase “Project board” label above the wordmark. Follow with four equal deliverable slots, then four equal Kanban columns. Center content within a 1536px maximum width; use 16px page padding on narrow viewports and 24px from the small breakpoint, 24px between major sections, 16px column gaps and 12px card gaps on a 4px spacing scale.
+- **Section panels:** Place Deliverables on a rounded, subtly bordered column-surface panel and the board on a card-surface panel, each with modest padding and shadow; keep the slots and Kanban columns visibly distinct inside them.
+- **Columns:** Keep stage names prominent, add a small neutral count pill beside each heading, and use a restrained 2px top accent for each stage; counts are derived from the tasks in that stage and labels remain the primary cue.
+- **Cards:** Theme card surface, 1px subtle border and 8px corners. Keep the labelled type and separate drag handle on a compact top row, then the title, owner and urgency in the edit button. Give that edit area a subtle page-surface hover and visible focus ring; keep Copy Context and handoff as separate controls rather than nesting actions.
 - **Buttons:** Solid violet primary, bordered neutral secondary and labelled rose delete; use 8px corners, at least 36px height, visible hover/focus states and explicit labels.
-- **Modal:** Center a white, 8px-rounded dialog up to 640px wide over a `text-primary` backdrop at 50% opacity; limit height to the viewport with scrolling, keep Save task/Cancel reachable, trap focus and restore it on close.
+- **Modal:** Center a theme card-surface, 8px-rounded dialog up to 640px wide over a black backdrop at 60% opacity in both themes; limit height to the viewport with scrolling, keep Save task/Cancel reachable, trap focus and restore it on close.
 - **Fields:** Persistent labels above controls, required markers for mandatory values, helper/error text below, and a monospace context textarea at least 160px tall; optional tool selection includes “No tool selected”.
 - **Empty states:** Muted copy inside a dashed container with a contextual Add task action; columns and empty deliverable slots remain visible.
 - **Ownership:** A small neutral initials badge exposes the full member name; Hand off to… is a labelled select, and a one-member list explains “Add another configured member to enable handoff.”
-- **Anchors:** Four white slots with label, URL field, explicit Save link/Clear/Open actions, and outlined/filled dots accompanied by “No link”/“Link saved”; filled means recorded, not verified complete.
-- **Movement:** Use the modal status dropdown for the baseline. Do not display grab cursors or drag handles before a functioning accessible drag feature is selected for M12.
+- **Anchors:** Four compact theme card-surface slots with 12px padding and an inline label/status row, URL field, explicit Save link/Clear/Open actions, and outlined/filled dots accompanied by “No link”/“Link saved”; filled means recorded, not verified complete.
+- **Movement — M12:** A separate bordered “⠿ Drag” handle with grab/grabbing cursor starts native desktop dragging; the card edit button, Copy Context and handoff remain separate controls. Highlight the other three columns with a 2px violet ring and “Drop here to move to {stage}” text, including empty columns. Drop updates only status through the existing task save; the board then derives new urgency immediately. Escape, an outside drop or a same-column drop makes no change. End/cancel removes highlights. Suppress clicks produced during dragging so they cannot invoke card actions; the next deliberate pointer or keyboard action restores normal controls. The labelled modal Status dropdown remains the keyboard and touch alternative; clicking the handle explains that alternative. No ordering within columns or animated movement is introduced.
 - **Feedback:** Put concise success messages in a polite live region; announce validation/copy/storage failures accessibly, preserve drafts and show selectable briefing text when clipboard access fails.
 - **Zoom and overflow:** At 1280 × 720 retain usable controls; at 200% zoom reflow deliverables and columns into fewer columns or provide contained scrolling, never clip the dialog footer or hide content.
 - **Motion:** Only a brief toast fade up to 200ms; disable nonessential transitions for reduced-motion preferences. No animated card movement is necessary.
@@ -121,6 +141,9 @@ Calm, direct and specific; avoid jokes, AI hype and messages that imply another 
 | Confirm delete | “Delete this task? This cannot be undone.” |
 | Delete confirmation / cancel | “Delete task” / “Keep task” |
 | Handoff success | “Assigned to {name}.” |
+| Move success | “Task moved to {stage}.” |
+| Theme toggle | “Switch to dark theme” / “Switch to light theme” |
+| Theme save failure | “Theme changed for this visit, but your selection could not be saved. Try again.” |
 | Unsaved context hint | “Context not saved yet.” |
 | Context update hint | “Context updated {relativeTime}.” |
 | Empty / filled anchor | “No link” / “Link saved” |
@@ -133,13 +156,13 @@ Use visible labels for urgency (“Due today”, “Due soon”, “Overdue”, 
 ## 6. Name / wordmark
 
 - **Product name:** Vibecoding Project Tracker; retain the existing name to keep the interface and submitted requirements consistent.
-- **Wordmark:** Text only, 24px system sans-serif semibold, `brand-primary`; no invented team name, logo asset or hero illustration.
+- **Wordmark:** Text only, 24px system sans-serif semibold (30px from the small-screen breakpoint), `brand-primary`; no invented team name, logo asset or hero illustration.
 - **Supporting line:** “Keep the task. Keep the context.” beneath the heading in muted body text.
 
 ## 7. Scope and handoff to implementation
 
 M3 delivers this completed design system and matching Tailwind tokens. It does not implement the board, dialogs, urgency timers, member records or clipboard flows; those remain their respective build milestones.
 
-One default light theme. Dark mode, multiple themes, a custom icon pack, remote fonts, elaborate animation and a component-library dependency are unnecessary for this milestone. Member editing and user-customizable colours remain Planned per PRD; design defaults do not promote them to baseline scope. Public deployment is optional under the current PRD.
+M12 explicitly adds the light/dark toggle and task dragging described above, superseding M3's earlier dark-mode exclusion. A custom icon pack, remote fonts, elaborate animation and a component-library dependency remain unnecessary. Member editing and user-customizable colours remain Planned per PRD; two fixed accessible palettes do not promote those extensions to baseline scope. Public deployment is optional under the current PRD.
 
 The visual references above guide composition and behaviour; they do not add features or dependencies. Existing React/Vite/Tailwind configuration and entry files remain in place.

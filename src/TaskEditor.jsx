@@ -55,7 +55,7 @@ export default function TaskEditor({ task, onSave, onDelete, onClose, storageErr
   return (
     <dialog ref={dialog} aria-labelledby="task-editor-title"
       onCancel={event => { event.preventDefault(); onClose(); }}
-      className={`m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-[640px] overflow-y-auto rounded-lg border border-border-subtle border-l-4 bg-surface-card p-6 text-text-primary backdrop:bg-text-primary/50 ${TYPE_STYLES[draft.type]?.border || ''}`}>
+      className={`m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-[640px] overflow-y-auto rounded-lg border border-border-subtle border-l-4 bg-surface-card p-6 text-text-primary ${TYPE_STYLES[draft.type]?.border || ''}`}>
       <header className="mb-4 flex items-start justify-between gap-4">
         <div>
           <h2 id="task-editor-title" className="text-base font-semibold">{task.id ? 'Edit task' : 'New task'}</h2>
