@@ -1,3 +1,5 @@
+import { readCollection, writeCollection } from './storage.js';
+
 /**
  * @typedef {Object} Task
  * @property {string} id
@@ -175,15 +177,10 @@ export function contextUpdatedHint(timestamp, now = new Date()) {
 }
 
 export function readTasks(storage, key, initialValue) {
-  const raw = storage.getItem(key);
-  const value = raw === null
-    ? (typeof initialValue === 'function' ? initialValue() : initialValue)
-    : JSON.parse(raw);
-  return { tasks: normalizeTasks(value), isNew: raw === null };
+  const { value, isNew } = readCollection(storage, key, initialValue, normalizeTasks);
+  return { tasks: value, isNew };
 }
 
 export function writeTasks(storage, key, tasks) {
-  const value = normalizeTasks(tasks);
-  storage.setItem(key, JSON.stringify(value));
-  return value;
+  return writeCollection(storage, key, tasks, normalizeTasks);
 }

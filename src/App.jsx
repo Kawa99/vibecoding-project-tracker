@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { STAGES, TEAM, createExampleTasks, newTask, ownerInitials, prepareTask, readTasks, writeTasks } from './tasks.js';
+import { STAGES, TEAM, createExampleTasks, newTask, normalizeTasks, ownerInitials, prepareTask } from './tasks.js';
+import { useLocalStorage } from './storage.js';
+import AnchorBoard from './AnchorBoard.jsx';
 import TaskEditor from './TaskEditor.jsx';
 import TaskType, { TYPE_STYLES } from './TaskType.jsx';
 import DeadlineBadge from './DeadlineBadge.jsx';
@@ -8,52 +10,6 @@ import { getDeadline, watchDeadlineClock } from './deadlines.js';
 
 export { STAGES, MEMBERS, TEAM, createExampleTasks } from './tasks.js';
 
-// Persist before updating the board so failed saves leave the draft intact.
-export function useLocalStorage(key, initialValue) {
-  const [state, setState] = useState(() => {
-    try {
-      if (typeof window === 'undefined') {
-        return { tasks: initialValue(), isNew: false, blocked: false, error: '' };
-      }
-      return { ...readTasks(window.localStorage, key, initialValue), blocked: false, error: '' };
-    } catch {
-      return {
-        tasks: [], isNew: false, blocked: true,
-        error: 'Saved tasks could not be read. Existing browser data was left unchanged. Reload to retry.',
-      };
-    }
-  });
-
-  useEffect(() => {
-    if (!state.isNew) return;
-    try {
-      writeTasks(window.localStorage, key, state.tasks);
-      setState(current => ({ ...current, isNew: false }));
-    } catch {
-      setState(current => ({
-        ...current, isNew: false,
-        error: 'Example tasks could not be saved. Keep this window open and retry by saving a task.',
-      }));
-    }
-  }, [key, state]);
-
-  function save(tasks) {
-    if (state.blocked) return false;
-    try {
-      const saved = writeTasks(window.localStorage, key, tasks);
-      setState({ tasks: saved, isNew: false, blocked: false, error: '' });
-      return true;
-    } catch {
-      setState(current => ({
-        ...current,
-        error: 'Changes could not be saved in this browser. Keep this window open and copy your work, then retry.',
-      }));
-      return false;
-    }
-  }
-
-  return [state.tasks, save, state.error, state.blocked];
-}
 
 export function TaskBoard({ tasks, onEdit, onHandoff, handoffDisabled = false }) {
   const [, setTick] = useState(0);
@@ -120,7 +76,7 @@ export function TaskBoard({ tasks, onEdit, onHandoff, handoffDisabled = false })
 
 export default function App() {
   const [tasks, saveTasks, storageError, storageBlocked] =
-    useLocalStorage('vibetracker.tasks', createExampleTasks);
+    useLocalStorage('vibetracker.tasks', createExampleTasks, normalizeTasks);
   const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState('');
   const addButton = useRef(null);
@@ -166,6 +122,7 @@ export default function App() {
         </button>
       </header>
       <main aria-label="Task board">
+        <AnchorBoard />
         <p className="mb-4 text-sm text-text-muted">Sample members demonstrate ownership. Saved in this browser only; clearing browser data removes your work.</p>
         <p role="status" className="mb-4 text-sm">{message}</p>
         {storageError && !editing && <p role="alert" className="mb-4 text-sm text-due-overdue-text">{storageError}</p>}

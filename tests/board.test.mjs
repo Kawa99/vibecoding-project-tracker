@@ -12,6 +12,8 @@ const { default: TaskEditor } = await server.ssrLoadModule('/src/TaskEditor.jsx'
 const { default: TaskType } = await server.ssrLoadModule('/src/TaskType.jsx');
 const { default: DeadlineBadge } = await server.ssrLoadModule('/src/DeadlineBadge.jsx');
 const { CONTEXT_TEMPLATE, CONTEXT_TOOLS, newTask } = await server.ssrLoadModule('/src/tasks.js');
+const { AnchorSlot } = await server.ssrLoadModule('/src/AnchorBoard.jsx');
+const { createAnchors } = await server.ssrLoadModule('/src/anchors.js');
 
 test('example tasks satisfy the task model and use configured sample members', () => {
   const tasks = createExampleTasks();
@@ -86,7 +88,7 @@ test('app restores saved data and keeps an intentionally empty board empty', () 
   try {
     let raw = JSON.stringify([{ ...createExampleTasks()[0], title: 'Previously saved task' }]);
     globalThis.window = { localStorage: {
-      getItem: () => raw,
+      getItem: key => key === 'vibetracker.tasks' ? raw : null,
       setItem: () => { throw new Error('Rendering must not write'); },
     } };
     const saved = renderToStaticMarkup(React.createElement(App));
@@ -97,7 +99,7 @@ test('app restores saved data and keeps an intentionally empty board empty', () 
     assert.equal((empty.match(/No tasks in this stage yet\./g) || []).length, 4);
     raw = '{broken';
     const broken = renderToStaticMarkup(React.createElement(App));
-    assert.ok(broken.includes('Saved tasks could not be read'));
+    assert.ok(broken.includes('Saved data could not be read'));
     assert.equal(raw, '{broken');
   } finally {
     if (previous === undefined) delete globalThis.window;
@@ -222,4 +224,51 @@ test('each card and the modal expose a separate non-submit Copy Context button',
   const draft = { ...newTask(), title: 'Visible draft title' };
   const modal = renderToStaticMarkup(React.createElement(TaskEditor, { task: draft, fallbackFocus: { current: null } }));
   assert.match(modal, /<button\b[^>]*type="button"[^>]*aria-label="Copy Context for Visible draft title"/);
+});
+
+test('deliverable slots expose one labelled URL field, saved status and safe saved-link actions', () => {
+  const empty = createAnchors()[0];
+  const html = renderToStaticMarkup(React.createElement(AnchorSlot, { anchor: empty }));
+  assert.equal((html.match(/type="url"/g) || []).length, 1);
+  assert.ok(html.includes('Presentation URL'));
+  assert.ok(html.includes('No link'));
+  assert.ok(html.includes('Save link'));
+  assert.ok(html.includes('Clear'));
+  assert.ok(!html.includes('<a '));
+  const saved = renderToStaticMarkup(React.createElement(AnchorSlot, { anchor: { ...empty, url: 'https://example.com/slides' } }));
+  assert.ok(saved.includes('Link saved'));
+  assert.ok(saved.includes('bg-type-feature'));
+  assert.ok(saved.includes('href="https://example.com/slides"'));
+  assert.ok(saved.includes('target="_blank"'));
+  assert.ok(saved.includes('rel="noopener noreferrer"'));
+});
+
+test('four deliverables stay above the board and bad anchor data does not break saved tasks', () => {
+  const previous = globalThis.window;
+  const task = { ...createExampleTasks()[0], title: 'My saved task' };
+  let raw = null;
+  globalThis.window = { localStorage: {
+    getItem: key => key === 'vibetracker.tasks' ? JSON.stringify([task]) : raw,
+    setItem: () => { throw new Error('Rendering must not write'); },
+  } };
+  try {
+    const fresh = renderToStaticMarkup(React.createElement(App));
+    assert.equal((fresh.match(/type="url"/g) || []).length, 4);
+    assert.ok(fresh.indexOf('id="deliverables-title"') < fresh.indexOf('id="stage-todo"'));
+    assert.ok(fresh.includes('My saved task'));
+    for (const label of ['Presentation', 'Demo', 'Report', 'Documentation']) assert.ok(fresh.includes(label));
+    raw = JSON.stringify(createAnchors().map(anchor => ({ ...anchor, url: 'https://example.com' })));
+    assert.equal((renderToStaticMarkup(React.createElement(App)).match(/Open saved link/g) || []).length, 4);
+    raw = '{broken';
+    const broken = renderToStaticMarkup(React.createElement(App));
+    assert.ok(broken.includes('Deliverables: Saved data could not be read'));
+    assert.equal((broken.match(/type="url"/g) || []).length, 4);
+    assert.equal((broken.match(/Unavailable/g) || []).length, 4);
+    assert.equal((broken.match(/type="submit" disabled=""/g) || []).length, 4);
+    assert.ok(broken.includes('My saved task'));
+    assert.equal(raw, '{broken');
+  } finally {
+    if (previous === undefined) delete globalThis.window;
+    else globalThis.window = previous;
+  }
 });
