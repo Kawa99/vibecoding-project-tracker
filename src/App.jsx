@@ -1,14 +1,8 @@
 import { useState, useEffect } from 'react';
 
 /**
- * Vibecoding Project Tracker — starter scaffold.
- *
- * This file is intentionally almost empty. The boilerplate (Vite, React,
- * Tailwind) is configured for you, plus a few shared constants and a
- * localStorage helper. Everything visible on screen, you build.
- *
- * Where to start (build sequence in Phase 3):
- *   - M4  data-model    : render the four columns and the task cards below.
+ * Vibecoding Project Tracker — board and task model (M4).
+ * Remaining milestones:
  *   - M5  crud-modal    : add the "+" button modal and the edit-on-click modal.
  *   - M6  tag-style     : feature vs. bug color coding (uses DESIGN.md §2 colors).
  *   - M7  task-owner    : assignee badge + "Hand off to..." dropdown.
@@ -18,7 +12,6 @@ import { useState, useEffect } from 'react';
  *   - M11 anchors       : the Anchor Board above the Kanban.
  *   - M12 secret-sauce  : the one open-ended thing that makes your tracker yours.
  *
- * Search the file for `TODO M<n>` to find the right hook for each milestone.
  */
 
 /**
@@ -31,6 +24,9 @@ import { useState, useEffect } from 'react';
  * @property {string} assignee
  * @property {string|null} dueDate     ISO 'YYYY-MM-DD'
  * @property {string} createdDate      ISO 'YYYY-MM-DD'
+ * @property {string} context
+ * @property {string|null} contextTool
+ * @property {string|null} contextUpdatedAt
  */
 
 // The four columns of the board, in render order.
@@ -42,9 +38,52 @@ export const STAGES = [
   { id: 'done',        label: 'Done' },
 ];
 
-// Replace these placeholders with the three names from PRD §8 before M4.
-// They become the only valid values for `Task.assignee`.
-export const TEAM = ['Teammate A', 'Teammate B', 'Teammate C'];
+// Sample profiles demonstrate ownership without implying real collaborators.
+export const MEMBERS = [
+  { name: 'Alex (example)', email: null, github: null },
+  { name: 'Sam (example)', email: null, github: null },
+  { name: 'Riley (example)', email: null, github: null },
+];
+export const TEAM = MEMBERS.map(member => member.name);
+
+export function createExampleTasks() {
+  const now = new Date();
+  const createdDate = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+
+  return [
+    {
+      id: 'example-context',
+      title: 'Add a context briefing to each task',
+      description: 'Keep background, constraints and next steps together.',
+      type: 'feature', status: 'todo', assignee: TEAM[0],
+    },
+    {
+      id: 'example-board',
+      title: 'Build the four-column board',
+      description: 'Show each task in the column matching its status.',
+      type: 'feature', status: 'in-progress', assignee: TEAM[1],
+    },
+    {
+      id: 'example-title',
+      title: 'Check long task titles stay readable',
+      description: 'Verify titles wrap without overflowing their cards.',
+      type: 'bug', status: 'review', assignee: TEAM[2],
+    },
+    {
+      id: 'example-design',
+      title: 'Define the design system',
+      description: 'Choose the palette, typography and component principles.',
+      type: 'feature', status: 'done', assignee: TEAM[0],
+    },
+  ].map(task => ({
+    ...task, dueDate: null, createdDate,
+    context: '', contextTool: null, contextUpdatedAt: null,
+  }));
+}
 
 /**
  * A tiny localStorage hook — survives reloads, no library needed.
@@ -73,44 +112,54 @@ export function useLocalStorage(key, initialValue) {
   return [value, setValue];
 }
 
+export function TaskBoard({ tasks }) {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {STAGES.map(stage => {
+        const stageTasks = tasks.filter(task => task.status === stage.id);
+        return (
+          <section key={stage.id} aria-labelledby={`stage-${stage.id}`} className="min-w-0 rounded-lg bg-surface-column p-4">
+            <h2 id={`stage-${stage.id}`} className="mb-4 text-base font-semibold">
+              {stage.label}
+            </h2>
+            {stageTasks.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-control-border p-4 text-sm text-text-muted">
+                No tasks in this stage yet.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {stageTasks.map(task => (
+                  <li key={task.id}>
+                    <article className="min-w-0 rounded-lg border border-border-subtle bg-surface-card p-4">
+                      <h3 className="break-words text-sm font-semibold">{task.title}</h3>
+                      <p className="mt-3 break-words text-xs text-text-muted">
+                        <span className="font-medium">Owner: </span>{task.assignee}
+                      </p>
+                    </article>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function App() {
-  // TODO M4 data-model:
-  //   const [tasks, setTasks] = useLocalStorage('vibetracker.tasks', [/* 3-4 seed tasks */]);
-  //
-  // TODO M5 crud-modal:
-  //   const [editing, setEditing] = useState(null);
-  //
-  // TODO M11 anchors:
-  //   const [anchors, setAnchors] = useLocalStorage('vibetracker.anchors', [...]);
+  // M5 adds editing and persistence; M4 keeps the sample board in memory.
+  const [tasks] = useState(createExampleTasks);
 
   return (
-    <div className="min-h-screen p-6">
-      <header className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Vibecoding Project Tracker
-          </h1>
-          <p className="text-sm text-slate-500">
-            {/* Replace this line with your team name from PRD §11. */}
-            Team starter
-          </p>
-        </div>
+    <div className="min-h-screen bg-surface-page p-6 font-sans text-text-primary">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold text-brand-primary">Vibecoding Project Tracker</h1>
+        <p className="mt-1 text-sm text-text-muted">Keep the task. Keep the context.</p>
       </header>
-
-      {/* TODO M11 anchors: render the Anchor Board (Presentation / Demo / Report / Documentation) above the board. */}
-
-      {/*
-        TODO M4 data-model:
-          Render a Kanban board with the four columns from STAGES.
-          Each column should display the tasks whose status matches its id.
-          Pre-populate 3-4 mock tasks so the board isn't empty on first load.
-
-        TODO M5 crud-modal:
-          Add a "+" button that opens a modal with every Task field.
-          Clicking a card should open the same modal in edit mode.
-      */}
-      <main className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400">
-        Build the four-column board here · M4
+      <main aria-label="Task board">
+        <p className="mb-4 text-sm text-text-muted">Example board with sample tasks and members.</p>
+        <TaskBoard tasks={tasks} />
       </main>
     </div>
   );
